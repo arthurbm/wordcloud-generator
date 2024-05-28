@@ -100,6 +100,33 @@ export function WordCloudForm() {
     mutation.mutate(data);
   };
 
+  const handleCopyImage = async () => {
+    if (imageSrc) {
+      try {
+        const response = await fetch(imageSrc);
+        const blob = await response.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            [blob.type]: blob,
+          }),
+        ]);
+        alert("Imagem copiada para a área de transferência!");
+      } catch (error) {
+        console.error("Erro ao copiar a imagem: ", error);
+        alert("Falha ao copiar a imagem.");
+      }
+    }
+  };
+
+  const handleDownloadImage = () => {
+    if (imageSrc) {
+      const link = document.createElement("a");
+      link.href = imageSrc;
+      link.download = "wordcloud.png";
+      link.click();
+    }
+  };
+
   return (
     <div
       key="1"
@@ -205,6 +232,14 @@ export function WordCloudForm() {
               Word Cloud
             </h2>
             <img src={imageSrc} alt="Generated Word Cloud" />
+            <div className="mt-4 flex space-x-4">
+              <Button variant={"secondary"} onClick={handleCopyImage}>
+                Copiar Imagem
+              </Button>
+              <Button variant={"secondary"} onClick={handleDownloadImage}>
+                Baixar Imagem
+              </Button>
+            </div>
           </div>
         )}
       </div>
