@@ -1,12 +1,104 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { Textarea } from "~/components/ui/textarea";
 import { Input } from "~/components/ui/input";
-import { generateWordCloud } from "~/actions";
-import { SubmitButton } from "./submit-button";
-import { useFormState } from "react-dom";
+import { Button } from "~/components/ui/button";
+
+const schema = z.object({
+  text: z.string().min(1, "Texto é obrigatório"),
+  width: z
+    .number()
+    .min(100, "Largura mínima é 100")
+    .max(2000, "Largura máxima é 2000")
+    .default(600),
+  height: z
+    .number()
+    .min(100, "Altura mínima é 100")
+    .max(2000, "Altura máxima é 2000")
+    .default(600),
+  scale: z
+    .number()
+    .min(0.1, "Escala mínima é 0.1")
+    .max(5, "Escala máxima é 5")
+    .default(2),
+});
+
+type FormData = z.infer<typeof schema>;
+
+type Base64Image = {
+  wordcloud: string;
+};
+
+const parseText = (text: string | undefined): string => {
+  if (!text) return "";
+
+  if (text.includes("\n")) {
+    const lines = text.split("\n");
+    return lines
+      .reduce((acc, line) => {
+        const [word, count] = line.split(",").map((item) => item.trim());
+        return acc.concat(Array(parseInt(count ?? "0")).fill(word));
+      }, [] as string[])
+      .join(",");
+  }
+  return text;
+};
+
+const createWordCloud = async (data: FormData): Promise<string> => {
+  const parsedText = parseText(data.text);
+  const response = await fetch(
+    "https://sp-wordcloud-mcjozft4ta-uc.a.run.app/generate-wordcloud",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: parsedText,
+        width: data.width,
+        height: data.height,
+        scale: data.scale,
+        colors: ["#3C69EB", "#E5335D", "#32CCB0", "#FCB400"],
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Error: ${response.status}`);
+  }
+
+  const result = (await response.json()) as Base64Image;
+  return result.wordcloud;
+};
 
 export function WordCloudForm() {
-  const [state, formAction] = useFormState(generateWordCloud, "");
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      width: 1024,
+      height: 400,
+      scale: 0.5,
+    },
+  });
+
+  const mutation = useMutation<string, Error, FormData>({
+    mutationFn: createWordCloud,
+    onSuccess: (data) => {
+      setImageSrc(`data:image/png;base64,${data}`);
+    },
+  });
+
+  const onSubmit = (data: FormData) => {
+    mutation.mutate(data);
+  };
 
   return (
     <div
@@ -20,22 +112,25 @@ export function WordCloudForm() {
             Gerador de Nuvem de Palavras
           </h1>
         </div>
-
-        <form action={formAction} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
             <label
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               htmlFor="text"
             >
-              Digite seu texto separado por vírgulas:
+              Digite seu texto separado por vírgulas ou palavras seguidas de
+              quantidade (ex: word, 5):
             </label>
             <Textarea
-              name="text"
+              {...register("text")}
               className="focus:ring-primary-500 focus:border-primary-500 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               id="text"
-              placeholder="Digite ou cole seu texto separado por vírgulas aqui..."
+              placeholder="Digite ou cole seu texto aqui..."
               rows={6}
             />
+            {errors.text && (
+              <p className="text-red-500">{errors.text.message}</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-6">
             <div>
@@ -46,12 +141,14 @@ export function WordCloudForm() {
                 Largura:
               </label>
               <Input
-                name="width"
+                {...register("width", { valueAsNumber: true })}
                 className="focus:ring-primary-500 focus:border-primary-500 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 id="width"
                 type="number"
-                defaultValue={600}
               />
+              {errors.width && (
+                <p className="text-red-500">{errors.width.message}</p>
+              )}
             </div>
             <div>
               <label
@@ -61,12 +158,14 @@ export function WordCloudForm() {
                 Altura:
               </label>
               <Input
-                name="height"
+                {...register("height", { valueAsNumber: true })}
                 className="focus:ring-primary-500 focus:border-primary-500 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 id="height"
                 type="number"
-                defaultValue={600}
               />
+              {errors.height && (
+                <p className="text-red-500">{errors.height.message}</p>
+              )}
             </div>
           </div>
           <div>
@@ -77,27 +176,35 @@ export function WordCloudForm() {
               Escala:
             </label>
             <Input
-              name="scale"
+              {...register("scale", { valueAsNumber: true })}
               className="focus:ring-primary-500 focus:border-primary-500 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               id="scale"
               type="number"
-              defaultValue={2}
               step={0.1}
             />
+            {errors.scale && (
+              <p className="text-red-500">{errors.scale.message}</p>
+            )}
           </div>
-          <SubmitButton />
+          <Button
+            className="w-full"
+            type="submit"
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? "Gerando..." : "Gerar Nuvem de Palavras"}
+          </Button>
         </form>
-        {/* {error && (
+        {mutation.isError && (
           <p className="mt-4 text-red-500">
-            Erro ao gerar a nuvem de palavras: {error}
+            Erro ao gerar a nuvem de palavras: {mutation.error.message}
           </p>
-        )} */}
-        {state !== "" && (
+        )}
+        {imageSrc && (
           <div className="mt-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               Word Cloud
             </h2>
-            <img src={state} alt="Generated Word Cloud" />
+            <img src={imageSrc} alt="Generated Word Cloud" />
           </div>
         )}
       </div>
