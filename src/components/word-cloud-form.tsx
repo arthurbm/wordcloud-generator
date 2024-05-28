@@ -164,7 +164,8 @@ export function WordCloudForm() {
               htmlFor="text"
             >
               Digite seu texto separado por vírgulas ou palavras seguidas de
-              quantidade (ex: word, 5):
+              quantidade (ex: word, 5). Se quiser extrair palavras-chave, de um
+              texto bruto, clique no botão abaixo.
             </label>
             <Textarea
               {...register("text")}
