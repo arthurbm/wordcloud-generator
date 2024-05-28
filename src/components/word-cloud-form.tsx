@@ -134,7 +134,7 @@ export function WordCloudForm() {
     >
       <div className="w-full max-w-2xl rounded-lg bg-white p-12 shadow-lg dark:bg-gray-800">
         <div className="mb-6 flex items-center">
-          <CloudIcon className="mr-2 text-3xl text-gray-900 dark:text-gray-100" />
+          <CloudIcon className="mr-4 text-3xl text-gray-900 dark:text-gray-100" />
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Gerador de Nuvem de Palavras
           </h1>
@@ -252,8 +252,8 @@ function CloudIcon(props: React.SVGProps<SVGSVGElement>) {
     <svg
       {...props}
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
+      width="32"
+      height="32"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
