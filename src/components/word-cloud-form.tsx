@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Textarea } from "~/components/ui/textarea";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
+import { getWords } from "~/app/acionts";
 
 const schema = z.object({
   text: z.string().min(1, "Texto é obrigatório"),
@@ -76,10 +77,13 @@ const createWordCloud = async (data: FormData): Promise<string> => {
 
 export function WordCloudForm() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
+    getValues,
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -98,6 +102,20 @@ export function WordCloudForm() {
 
   const onSubmit = (data: FormData) => {
     mutation.mutate(data);
+  };
+
+  const handleExtractKeywords = async () => {
+    const text = getValues("text");
+    setIsLoading(true);
+    try {
+      const keywords = await getWords(text);
+      setValue("text", keywords);
+    } catch (error) {
+      console.error("Erro ao extrair palavras-chave: ", error);
+      alert("Falha ao extrair palavras-chave.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCopyImage = async () => {
@@ -134,7 +152,7 @@ export function WordCloudForm() {
     >
       <div className="w-full max-w-2xl rounded-lg bg-white p-12 shadow-lg dark:bg-gray-800">
         <div className="mb-6 flex items-center">
-          <CloudIcon className="mr-4 text-3xl text-gray-900 dark:text-gray-100" />
+          <CloudIcon className="mr-2 text-3xl text-gray-900 dark:text-gray-100" />
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Gerador de Nuvem de Palavras
           </h1>
@@ -154,11 +172,19 @@ export function WordCloudForm() {
               id="text"
               placeholder="Digite ou cole seu texto aqui..."
               rows={6}
+              disabled={isLoading}
             />
             {errors.text && (
               <p className="text-red-500">{errors.text.message}</p>
             )}
           </div>
+          <Button
+            type="button"
+            onClick={handleExtractKeywords}
+            disabled={isLoading}
+          >
+            {isLoading ? "Extraindo..." : "Extrair Palavras-Chave com IA"}
+          </Button>
           <div className="grid grid-cols-2 gap-6">
             <div>
               <label
@@ -172,6 +198,7 @@ export function WordCloudForm() {
                 className="focus:ring-primary-500 focus:border-primary-500 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 id="width"
                 type="number"
+                disabled={isLoading}
               />
               {errors.width && (
                 <p className="text-red-500">{errors.width.message}</p>
@@ -189,6 +216,7 @@ export function WordCloudForm() {
                 className="focus:ring-primary-500 focus:border-primary-500 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 id="height"
                 type="number"
+                disabled={isLoading}
               />
               {errors.height && (
                 <p className="text-red-500">{errors.height.message}</p>
@@ -208,6 +236,7 @@ export function WordCloudForm() {
               id="scale"
               type="number"
               step={0.1}
+              disabled={isLoading}
             />
             {errors.scale && (
               <p className="text-red-500">{errors.scale.message}</p>
@@ -216,7 +245,7 @@ export function WordCloudForm() {
           <Button
             className="w-full"
             type="submit"
-            disabled={mutation.isPending}
+            disabled={isLoading || mutation.isPending}
           >
             {mutation.isPending ? "Gerando..." : "Gerar Nuvem de Palavras"}
           </Button>
@@ -233,10 +262,10 @@ export function WordCloudForm() {
             </h2>
             <img src={imageSrc} alt="Generated Word Cloud" />
             <div className="mt-4 flex space-x-4">
-              <Button variant={"secondary"} onClick={handleCopyImage}>
+              <Button onClick={handleCopyImage} disabled={isLoading}>
                 Copiar Imagem
               </Button>
-              <Button variant={"secondary"} onClick={handleDownloadImage}>
+              <Button onClick={handleDownloadImage} disabled={isLoading}>
                 Baixar Imagem
               </Button>
             </div>
@@ -252,8 +281,8 @@ function CloudIcon(props: React.SVGProps<SVGSVGElement>) {
     <svg
       {...props}
       xmlns="http://www.w3.org/2000/svg"
-      width="32"
-      height="32"
+      width="24"
+      height="24"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
