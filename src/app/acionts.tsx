@@ -6,7 +6,7 @@ import { openai } from "@ai-sdk/openai";
 export async function getWords(text: string) {
   console.log("getWords", text);
   const result = await generateText({
-    model: openai("gpt-4-turbo"),
+    model: openai("gpt-4o"),
     messages: [
       {
         role: "user",
