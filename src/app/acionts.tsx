@@ -1,11 +1,11 @@
 "use server";
 
-import { generateText } from "ai";
+import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { createStreamableValue } from "ai/rsc";
 
 export async function getWords(text: string) {
-  console.log("getWords", text);
-  const result = await generateText({
+  const result = await streamText({
     model: openai("gpt-4o"),
     messages: [
       {
@@ -15,5 +15,7 @@ export async function getWords(text: string) {
     ],
   });
 
-  return result.text;
+  const stream = createStreamableValue(result.textStream);
+
+  return stream.value;
 }

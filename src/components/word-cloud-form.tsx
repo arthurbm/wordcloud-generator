@@ -9,6 +9,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { getWords } from "~/app/acionts";
+import { readStreamableValue } from "ai/rsc";
 
 const schema = z.object({
   text: z.string().min(1, "Texto é obrigatório"),
@@ -109,7 +110,9 @@ export function WordCloudForm() {
     setIsLoading(true);
     try {
       const keywords = await getWords(text);
-      setValue("text", keywords);
+      for await (const content of readStreamableValue(keywords)) {
+        setValue("text", content!);
+      }
     } catch (error) {
       console.error("Erro ao extrair palavras-chave: ", error);
       alert("Falha ao extrair palavras-chave.");
@@ -169,7 +172,6 @@ export function WordCloudForm() {
             </label>
             <Textarea
               {...register("text")}
-              className="focus:ring-primary-500 focus:border-primary-500 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               id="text"
               placeholder="Digite ou cole seu texto aqui..."
               rows={6}
@@ -196,7 +198,6 @@ export function WordCloudForm() {
               </label>
               <Input
                 {...register("width", { valueAsNumber: true })}
-                className="focus:ring-primary-500 focus:border-primary-500 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 id="width"
                 type="number"
                 disabled={isLoading}
@@ -214,7 +215,6 @@ export function WordCloudForm() {
               </label>
               <Input
                 {...register("height", { valueAsNumber: true })}
-                className="focus:ring-primary-500 focus:border-primary-500 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                 id="height"
                 type="number"
                 disabled={isLoading}
@@ -233,7 +233,6 @@ export function WordCloudForm() {
             </label>
             <Input
               {...register("scale", { valueAsNumber: true })}
-              className="focus:ring-primary-500 focus:border-primary-500 block w-full rounded-md border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               id="scale"
               type="number"
               step={0.1}
@@ -263,10 +262,18 @@ export function WordCloudForm() {
             </h2>
             <img src={imageSrc} alt="Generated Word Cloud" />
             <div className="mt-4 flex space-x-4">
-              <Button onClick={handleCopyImage} disabled={isLoading}>
+              <Button
+                variant={"secondary"}
+                onClick={handleCopyImage}
+                disabled={isLoading}
+              >
                 Copiar Imagem
               </Button>
-              <Button onClick={handleDownloadImage} disabled={isLoading}>
+              <Button
+                variant={"secondary"}
+                onClick={handleDownloadImage}
+                disabled={isLoading}
+              >
                 Baixar Imagem
               </Button>
             </div>
