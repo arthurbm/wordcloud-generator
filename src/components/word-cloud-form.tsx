@@ -8,7 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Textarea } from "~/components/ui/textarea";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { getWords } from "~/app/acionts";
+import { getWords } from "~/app/actions";
 import { readStreamableValue } from "ai/rsc";
 
 const schema = z.object({
