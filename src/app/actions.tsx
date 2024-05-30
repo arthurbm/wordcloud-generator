@@ -3,6 +3,7 @@
 import { streamText } from "ai";
 import { createStreamableValue } from "ai/rsc";
 import { createOllama } from "ollama-ai-provider";
+import { openai } from "@ai-sdk/openai";
 
 export async function getWords(text: string) {
   const ollama = createOllama({
@@ -10,7 +11,7 @@ export async function getWords(text: string) {
   });
 
   const result = await streamText({
-    model: ollama("aya:8b"),
+    model: openai("gpt-4o"),
     messages: [
       {
         role: "user",
