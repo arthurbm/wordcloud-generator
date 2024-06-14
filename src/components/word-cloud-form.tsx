@@ -10,6 +10,7 @@ import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { getWords } from "~/app/actions";
 import { readStreamableValue } from "ai/rsc";
+import { toast } from "sonner";
 
 const schema = z.object({
   text: z.string().min(1, "Texto é obrigatório"),
@@ -115,7 +116,7 @@ export function WordCloudForm() {
       }
     } catch (error) {
       console.error("Erro ao extrair palavras-chave: ", error);
-      alert("Falha ao extrair palavras-chave.");
+      toast.error("Falha ao extrair palavras-chave.");
     } finally {
       setIsLoading(false);
     }
@@ -131,10 +132,10 @@ export function WordCloudForm() {
             [blob.type]: blob,
           }),
         ]);
-        alert("Imagem copiada para a área de transferência!");
+        toast.success("Imagem copiada para a área de transferência!");
       } catch (error) {
         console.error("Erro ao copiar a imagem: ", error);
-        alert("Falha ao copiar a imagem.");
+        toast.error("Falha ao copiar a imagem.");
       }
     }
   };
