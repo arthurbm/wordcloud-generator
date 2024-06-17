@@ -11,9 +11,14 @@ import { Button } from "~/components/ui/button";
 import { getWords } from "~/app/actions";
 import { readStreamableValue } from "ai/rsc";
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Label } from "./ui/label";
+import { type ModelName } from "~/types";
 
 const schema = z.object({
   text: z.string().min(1, "Texto é obrigatório"),
+  blacklistWords: z.string().optional(),
+  model: z.string().optional(),
   width: z
     .number()
     .min(100, "Largura mínima é 100")
@@ -45,7 +50,11 @@ const parseText = (text: string | undefined): string => {
     return lines
       .reduce((acc, line) => {
         const [word, count] = line.split(",").map((item) => item.trim());
-        return acc.concat(Array(parseInt(count ?? "0")).fill(word));
+        const cleanedWord = word?.replace(/\.$/, ""); // Remove dot from the end of the line
+        if (cleanedWord && count) {
+          return acc.concat(Array(parseInt(count)).fill(cleanedWord));
+        }
+        return acc;
       }, [] as string[])
       .join(",");
   }
@@ -80,6 +89,10 @@ const createWordCloud = async (data: FormData): Promise<string> => {
 export function WordCloudForm() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedModel, setSelectedModel] = useState<ModelName>(
+    "models/gemini-1.5-pro-latest",
+  );
+
   const {
     register,
     handleSubmit,
@@ -108,9 +121,10 @@ export function WordCloudForm() {
 
   const handleExtractKeywords = async () => {
     const text = getValues("text");
+    const blacklistWords = getValues("blacklistWords");
     setIsLoading(true);
     try {
-      const keywords = await getWords(text);
+      const keywords = await getWords(text, selectedModel, blacklistWords);
       for await (const content of readStreamableValue(keywords)) {
         setValue("text", content!);
       }
@@ -154,131 +168,187 @@ export function WordCloudForm() {
       key="1"
       className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-gray-900"
     >
-      <div className="w-full max-w-2xl rounded-lg bg-white p-12 shadow-lg dark:bg-gray-800">
-        <div className="mb-6 flex items-center">
+      <div className="w-full max-w-7xl rounded-lg bg-white p-12 shadow-lg dark:bg-gray-800">
+        <div className="mb-6 flex items-center justify-center">
           <CloudIcon className="mr-2 text-3xl text-gray-900 dark:text-gray-100" />
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Gerador de Nuvem de Palavras
           </h1>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div>
-            <label
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              htmlFor="text"
-            >
-              Digite seu texto separado por vírgulas ou palavras seguidas de
-              quantidade (ex: word, 5). Se quiser extrair palavras-chave, de um
-              texto bruto, clique no botão abaixo.
-            </label>
-            <Textarea
-              {...register("text")}
-              id="text"
-              placeholder="Digite ou cole seu texto aqui..."
-              rows={6}
-              disabled={isLoading}
-            />
-            {errors.text && (
-              <p className="text-red-500">{errors.text.message}</p>
-            )}
-          </div>
-          <Button
-            type="button"
-            onClick={handleExtractKeywords}
-            disabled={isLoading}
-          >
-            {isLoading ? "Extraindo..." : "Extrair Palavras-Chave com IA"}
-          </Button>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                htmlFor="width"
-              >
-                Largura:
-              </label>
-              <Input
-                {...register("width", { valueAsNumber: true })}
-                id="width"
-                type="number"
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="space-y-6">
+              <div>
+                <label
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  htmlFor="text"
+                >
+                  Digite seu texto separado por vírgulas ou palavras seguidas de
+                  quantidade (ex: word, 5). Se quiser extrair palavras-chave, de
+                  um texto bruto, clique no botão abaixo.
+                </label>
+                <Textarea
+                  {...register("text")}
+                  id="text"
+                  placeholder="Digite ou cole seu texto aqui..."
+                  rows={6}
+                  disabled={isLoading}
+                />
+                {errors.text && (
+                  <p className="text-red-500">{errors.text.message}</p>
+                )}
+              </div>
+              <div>
+                <label
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  htmlFor="text"
+                >
+                  Palavras a serem excluídas do resultado: (opcional)
+                </label>
+                <Textarea
+                  {...register("blacklistWords")}
+                  id="text"
+                  placeholder="Digite ou cole seu texto aqui..."
+                  rows={6}
+                  disabled={isLoading}
+                />
+                {errors.text && (
+                  <p className="text-red-500">{errors.text.message}</p>
+                )}
+              </div>
+              <div>
+                <label
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  htmlFor="model"
+                >
+                  Selecione o Modelo:
+                </label>
+                <RadioGroup
+                  defaultValue={selectedModel}
+                  onValueChange={(value: ModelName) => setSelectedModel(value)}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem
+                      value="models/gemini-1.5-pro-latest"
+                      id="model3"
+                    />
+                    <Label htmlFor="model3">
+                      Gemini 1.5 Pro (Qualidade boa, Sempre funciona)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="gpt-4-turbo" id="model1" />
+                    <Label htmlFor="model1">
+                      GPT 4 turbo (Qualidade muito boa, Nem sempre funciona em
+                      contextos muito longos)
+                    </Label>
+                  </div>
+                </RadioGroup>
+                {errors.model && (
+                  <p className="text-red-500">{errors.model.message}</p>
+                )}
+              </div>
+              <Button
+                type="button"
+                onClick={handleExtractKeywords}
                 disabled={isLoading}
-              />
-              {errors.width && (
-                <p className="text-red-500">{errors.width.message}</p>
+              >
+                {isLoading ? "Extraindo..." : "Extrair Palavras-Chave com IA"}
+              </Button>
+            </div>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    htmlFor="width"
+                  >
+                    Largura:
+                  </label>
+                  <Input
+                    {...register("width", { valueAsNumber: true })}
+                    id="width"
+                    type="number"
+                    disabled={isLoading}
+                  />
+                  {errors.width && (
+                    <p className="text-red-500">{errors.width.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    htmlFor="height"
+                  >
+                    Altura:
+                  </label>
+                  <Input
+                    {...register("height", { valueAsNumber: true })}
+                    id="height"
+                    type="number"
+                    disabled={isLoading}
+                  />
+                  {errors.height && (
+                    <p className="text-red-500">{errors.height.message}</p>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  htmlFor="scale"
+                >
+                  Escala:
+                </label>
+                <Input
+                  {...register("scale", { valueAsNumber: true })}
+                  id="scale"
+                  type="number"
+                  step={0.1}
+                  disabled={isLoading}
+                />
+                {errors.scale && (
+                  <p className="text-red-500">{errors.scale.message}</p>
+                )}
+              </div>
+              <Button
+                className="w-full"
+                type="submit"
+                disabled={isLoading || mutation.isPending}
+              >
+                {mutation.isPending ? "Gerando..." : "Gerar Nuvem de Palavras"}
+              </Button>
+              {imageSrc && (
+                <div className="mt-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    Word Cloud
+                  </h2>
+                  <img src={imageSrc} alt="Generated Word Cloud" />
+                  <div className="mt-4 flex space-x-4">
+                    <Button
+                      variant={"secondary"}
+                      onClick={handleCopyImage}
+                      disabled={isLoading}
+                    >
+                      Copiar Imagem
+                    </Button>
+                    <Button
+                      variant={"secondary"}
+                      onClick={handleDownloadImage}
+                      disabled={isLoading}
+                    >
+                      Baixar Imagem
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
-            <div>
-              <label
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                htmlFor="height"
-              >
-                Altura:
-              </label>
-              <Input
-                {...register("height", { valueAsNumber: true })}
-                id="height"
-                type="number"
-                disabled={isLoading}
-              />
-              {errors.height && (
-                <p className="text-red-500">{errors.height.message}</p>
-              )}
-            </div>
           </div>
-          <div>
-            <label
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              htmlFor="scale"
-            >
-              Escala:
-            </label>
-            <Input
-              {...register("scale", { valueAsNumber: true })}
-              id="scale"
-              type="number"
-              step={0.1}
-              disabled={isLoading}
-            />
-            {errors.scale && (
-              <p className="text-red-500">{errors.scale.message}</p>
-            )}
-          </div>
-          <Button
-            className="w-full"
-            type="submit"
-            disabled={isLoading || mutation.isPending}
-          >
-            {mutation.isPending ? "Gerando..." : "Gerar Nuvem de Palavras"}
-          </Button>
         </form>
         {mutation.isError && (
           <p className="mt-4 text-red-500">
             Erro ao gerar a nuvem de palavras: {mutation.error.message}
           </p>
-        )}
-        {imageSrc && (
-          <div className="mt-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Word Cloud
-            </h2>
-            <img src={imageSrc} alt="Generated Word Cloud" />
-            <div className="mt-4 flex space-x-4">
-              <Button
-                variant={"secondary"}
-                onClick={handleCopyImage}
-                disabled={isLoading}
-              >
-                Copiar Imagem
-              </Button>
-              <Button
-                variant={"secondary"}
-                onClick={handleDownloadImage}
-                disabled={isLoading}
-              >
-                Baixar Imagem
-              </Button>
-            </div>
-          </div>
         )}
       </div>
     </div>

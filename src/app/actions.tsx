@@ -2,22 +2,60 @@
 
 import { streamText } from "ai";
 import { createStreamableValue } from "ai/rsc";
-import { createOllama } from "ollama-ai-provider";
+// import { createOllama } from "ollama-ai-provider";
 import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
+import { type ModelName } from "~/types";
 
-export async function getWords(text: string) {
-  const ollama = createOllama({
-    baseURL: "http://213.163.246.171:40002/api",
-  });
+export async function getWords(
+  text: string,
+  modelName: ModelName,
+  blackcklistWords?: string,
+) {
+  // const ollama = createOllama({
+  //   baseURL: "http://213.163.246.171:40002/api",
+  // });
+
+  const modelChooser = () => {
+    switch (modelName) {
+      case "gpt-4-turbo":
+        return openai("gpt-4-turbo");
+      case "models/gemini-1.5-pro-latest":
+        return google("models/gemini-1.5-pro-latest");
+    }
+  };
+
+  const model = modelChooser();
+  console.log("modelname", modelName);
 
   const result = await streamText({
-    model: openai("gpt-4o"),
+    model,
+    // model: google("models/gemini-1.5-pro-latest"),
     messages: [
       {
+        role: "system",
+        content: `
+        Your task is to analyze the text provided by the user and list ONLY 37 of the main keywords with semantic value for the context.
+        If there are EXACTLY 37 words, I will give you a $200 tip. If not, you will be fired and replaced by another AI that can do the job better.
+        You must focus exclusively on nouns, eliminating all other classes of words such as adjectives, verbs, adverbs, pronouns, articles, numerals, prepositions, conjunctions, and interjections.
+        Extract only the nouns that are essential to capture the main themes or central ideas of the text.
+        Provide the list of identified keywords as nouns separated by commas.
+        Never number the list of words.
+        Accentuate the words correctly.
+        The words must appear in order of importance.
+        Theh words must be in the same language as the text.
+        Do not list company and people's names. Avoid nouns with little semantic value such as "table", "document", "participant", "conference", "debate", etc.
+        Do not repeat words.
+        Do not put a dot, comma or whitespace at the end of the list.
+        ${blackcklistWords ? `Do not include these words on your answer: ${blackcklistWords}` : ""}
+        `,
+      },
+      {
         role: "user",
-        content: `analise o texto a seguir e liste as X principais palavras chave com valor semantico para o contexto. você deve se concentrar exclusivamente nos substantivos, eliminando todas as outras classes de palavras, como adjetivos, verbos, advérbios, pronomes, artigos, numerais, preposições, conjunções e interjeições. extraia apenas os substantivos que sejam essenciais para captar os temas principais ou ideias centrais do texto. forneça a lista dos substantivos identificados como palavras-chave separadas por vírgulas. nunca numere a lista de palavras. acentue corretamente as palavras. as palavras devem aparecer em ordem de importância. Texto: ${text}`,
+        content: text,
       },
     ],
+    temperature: 0.5,
   });
 
   const stream = createStreamableValue(result.textStream);
