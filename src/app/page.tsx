@@ -2,6 +2,8 @@
 import { WordCloudForm } from "~/components/word-cloud-form";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
   const queryClient = new QueryClient();
 
