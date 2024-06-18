@@ -20,7 +20,7 @@ export async function getWords(
   const modelChooser = () => {
     switch (modelName) {
       case "gpt-4-turbo":
-        return openai("gpt-4-turbo");
+        return openai("gpt-4o");
       case "models/gemini-1.5-pro-latest":
         return google("models/gemini-1.5-pro-latest");
     }
@@ -43,6 +43,7 @@ export async function getWords(
         Provide the list of identified keywords as nouns separated by commas.
         Never number the list of words.
         Accentuate the words correctly.
+        Compound words are considered as a single word. For example, "data analysis" is a single word. Do not separate them. If they are valuable, include them in the list.
         The words must appear in order of importance.
         Theh words must be in the same language as the text.
         Do not list company and people's names. Avoid nouns with little semantic value such as "table", "document", "participant", "conference", "debate", etc.
