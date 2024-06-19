@@ -47,9 +47,10 @@ export async function getWords(
         Compound words are considered as a single word. For example, "data analysis" is a single word. Do not separate them. If they are valuable, include them in the list.
         The words must appear in order of importance.
         Theh words must be in the same language as the text.
-        Do not list company and people's names. Avoid nouns with little semantic value such as "table", "document", "participant", "conference", "debate", etc.
+        Avoid nouns with little semantic value such as "table", "document", "participant", "conference", "debate", etc.
         Do not repeat words.
         Do not put a dot, comma or whitespace at the end of the list.
+        Do not include company, organizations and people's names.
         ${blackcklistWords ? `Do not include these words on your answer: ${blackcklistWords}` : ""}
 
         Example:
