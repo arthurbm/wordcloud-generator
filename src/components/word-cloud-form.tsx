@@ -89,9 +89,7 @@ const createWordCloud = async (data: FormData): Promise<string> => {
 export function WordCloudForm() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedModel, setSelectedModel] = useState<ModelName>(
-    "models/gemini-1.5-pro-latest",
-  );
+  const [selectedModel, setSelectedModel] = useState<ModelName>("gpt-4o");
 
   const {
     register,
@@ -232,16 +230,11 @@ export function WordCloudForm() {
                       value="models/gemini-1.5-pro-latest"
                       id="model3"
                     />
-                    <Label htmlFor="model3">
-                      Gemini 1.5 Pro (Qualidade boa, Sempre funciona)
-                    </Label>
+                    <Label htmlFor="model3">Gemini 1.5 Pro</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="gpt-4-turbo" id="model1" />
-                    <Label htmlFor="model1">
-                      GPT 4 turbo (Qualidade muito boa, Nem sempre funciona em
-                      contextos muito longos)
-                    </Label>
+                    <RadioGroupItem value="gpt-4o" id="model1" />
+                    <Label htmlFor="model1">GPT 4o</Label>
                   </div>
                 </RadioGroup>
                 {errors.model && (

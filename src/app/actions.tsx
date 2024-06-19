@@ -20,7 +20,7 @@ export async function getWords(
 
   const modelChooser = () => {
     switch (modelName) {
-      case "gpt-4-turbo":
+      case "gpt-4o":
         return openai("gpt-4o");
       case "models/gemini-1.5-pro-latest":
         return google("models/gemini-1.5-pro-latest");
