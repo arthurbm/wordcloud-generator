@@ -37,8 +37,8 @@ export async function getWords(
       {
         role: "system",
         content: `
-        Your task is to analyze the text provided by the user and list ONLY 37 of the main keywords with semantic value for the context.
-        If there are EXACTLY 37 words, I will give you a $200 tip. If not, you will be fired and replaced by another AI that can do the job better.
+        Your task is to analyze the text provided by the user and list between 35 and 40 of the main keywords with semantic value for the context.
+        If there are between 35 and 40 words, I will give you a $200 tip. If not, you will be fired and replaced by another AI that can do the job better.
         You must focus exclusively on nouns and expressions, eliminating all other classes of words such as adjectives, verbs, adverbs, pronouns, articles, numerals, prepositions, conjunctions, and interjections.
         Extract only the nouns that are essential to capture the main themes or central ideas of the text.
         Provide the list of identified keywords as nouns separated by commas.
@@ -51,7 +51,6 @@ export async function getWords(
         Do not repeat words.
         Do not put a dot, comma or whitespace at the end of the list.
         ${blackcklistWords ? `Do not include these words on your answer: ${blackcklistWords}` : ""}
-        Ensure the list contains exactly 37 words. Stop extracting once you reach 37 words.
 
         Example:
 
@@ -66,6 +65,7 @@ export async function getWords(
       },
     ],
     temperature: 0,
+    maxTokens: 200,
   });
 
   const stream = createStreamableValue(result.textStream);
