@@ -37,7 +37,7 @@ export async function getWords(
       {
         role: "system",
         content: `
-        Sua tarefa é analisar o texto fornecido pelo usuário e identificar entre 15 a 20 das principais palavras-chave com valor semântico para o contexto. 
+        Sua tarefa é analisar o texto fornecido pelo usuário e identificar entre 20 a 35 das principais palavras-chave com valor semântico para o contexto. 
 
         ### Critérios:
         1. **Foco Exclusivo em Substantivos e Expressões**:
