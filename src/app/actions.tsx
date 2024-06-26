@@ -6,7 +6,7 @@ import { createStreamableValue } from "ai/rsc";
 import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import { type ModelName } from "~/types";
-// import { unstable_noStore as noStore } from "next/cache";
+import { unstable_noStore as noStore } from "next/cache";
 
 export async function getWords(
   text: string,
@@ -29,10 +29,9 @@ export async function getWords(
 
   const model = modelChooser();
 
-  // noStore();
+  noStore();
   const result = await streamText({
     model,
-    // model: google("models/gemini-1.5-pro-latest"),
     messages: [
       {
         role: "system",
