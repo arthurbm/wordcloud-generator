@@ -1,7 +1,7 @@
 "use client";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 import { WordCloudForm } from "~/components/word-cloud-form";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
