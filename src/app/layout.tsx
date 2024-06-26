@@ -1,7 +1,13 @@
+"use client";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+
 import "~/styles/globals.css";
 
 import { GeistSans } from "geist/font/sans";
 import { Toaster } from "sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export const metadata = {
   title: "Wordcloud generator",
@@ -14,12 +20,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const queryClient = new QueryClient();
+
   return (
-    <html lang="en" className={`${GeistSans.variable}`}>
-      <body>
-        {children}
-        <Toaster />
-      </body>
-    </html>
+    <QueryClientProvider client={queryClient}>
+      <html lang="en" className={`${GeistSans.variable}`}>
+        <body>
+          {children}
+          <Toaster />
+        </body>
+      </html>
+    </QueryClientProvider>
   );
 }
