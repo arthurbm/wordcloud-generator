@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { type ModelName } from "~/types";
+import { unstable_noStore as noStore } from "next/cache";
 
 const schema = z.object({
   text: z.string().min(1, "Texto é obrigatório"),
@@ -122,6 +123,7 @@ export function WordCloudForm() {
     const blacklistWords = getValues("blacklistWords");
     setIsLoading(true);
     try {
+      noStore();
       const keywords = await getWords(text, selectedModel, blacklistWords);
       for await (const content of readStreamableValue(keywords)) {
         setValue("text", content!);
