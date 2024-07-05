@@ -101,9 +101,9 @@ export function WordCloudForm() {
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      width: 1024,
-      height: 400,
-      scale: 0.5,
+      width: 2000,
+      height: 1050,
+      scale: 1,
     },
   });
 
