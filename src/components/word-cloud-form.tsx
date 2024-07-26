@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -15,7 +15,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import {
   Form,
   FormControl,
-  // FormDescription,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -42,6 +42,7 @@ const schema = z.object({
     .min(100, "Altura mínima é 100")
     .max(2000, "Altura máxima é 2000"),
   scale: z.number().min(0.1, "Escala mínima é 0.1").max(5, "Escala máxima é 5"),
+  colors: z.array(z.string()).optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -71,6 +72,11 @@ const parseText = (text: string | undefined): string => {
 
 const createWordCloud = async (data: FormData): Promise<string> => {
   const parsedText = parseText(data.text);
+  console.log("data colors", data.colors);
+  const colors =
+    data.colors && data.colors?.length > 0
+      ? data.colors
+      : ["#3C69EB", "#E5335D", "#32CCB0", "#FCB400"];
   const response = await fetch(
     "https://sp-wordcloud-mcjozft4ta-uc.a.run.app/generate-wordcloud",
     {
@@ -81,7 +87,7 @@ const createWordCloud = async (data: FormData): Promise<string> => {
         width: data.width,
         height: data.height,
         scale: data.scale,
-        colors: ["#3C69EB", "#E5335D", "#32CCB0", "#FCB400"],
+        colors,
       }),
     },
   );
@@ -106,7 +112,14 @@ export function WordCloudForm() {
       height: 1050,
       scale: 1,
       wordLimit: 35,
+      colors: [],
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    // @ts-expect-error - TS doesn't like the fact that we're using a string as a key
+    name: "colors",
   });
 
   const mutation = useMutation<string, Error, FormData>({
@@ -186,12 +199,7 @@ export function WordCloudForm() {
                   name="text"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Digite seu texto separado por vírgulas ou palavras
-                        seguidas de quantidade (ex: word, 5). Se quiser extrair
-                        palavras-chave, de um texto bruto, clique no botão
-                        abaixo.
-                      </FormLabel>
+                      <FormLabel>Texto</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
@@ -200,6 +208,10 @@ export function WordCloudForm() {
                           disabled={isLoading}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Digite seu texto separado por vírgulas ou palavras
+                        seguidas de quantidade (ex: word, 5).
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -209,10 +221,11 @@ export function WordCloudForm() {
                   name="wordLimit"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Quantidade de Palavras:</FormLabel>
+                      <FormLabel>Quantidade</FormLabel>
                       <FormControl>
                         <Input {...field} type="number" disabled={isLoading} />
                       </FormControl>
+                      <FormDescription>Quantidade de Palavras</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -222,9 +235,7 @@ export function WordCloudForm() {
                   name="blacklistWords"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Palavras a serem excluídas do resultado: (opcional)
-                      </FormLabel>
+                      <FormLabel>Excluir</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
@@ -233,12 +244,15 @@ export function WordCloudForm() {
                           disabled={isLoading}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Palavras a serem excluídas (opcional)
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormItem>
-                  <FormLabel>Selecione o Modelo:</FormLabel>
+                  <FormLabel>Modelo</FormLabel>
                   <RadioGroup
                     defaultValue={selectedModel}
                     onValueChange={(value: ModelName) =>
@@ -274,7 +288,7 @@ export function WordCloudForm() {
                     name="width"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Largura:</FormLabel>
+                        <FormLabel>Largura</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -282,6 +296,9 @@ export function WordCloudForm() {
                             disabled={isLoading}
                           />
                         </FormControl>
+                        <FormDescription>
+                          Largura mínima: 100, máxima: 2000
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -291,7 +308,7 @@ export function WordCloudForm() {
                     name="height"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Altura:</FormLabel>
+                        <FormLabel>Altura</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -299,6 +316,9 @@ export function WordCloudForm() {
                             disabled={isLoading}
                           />
                         </FormControl>
+                        <FormDescription>
+                          Altura mínima: 100, máxima: 2000
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -309,7 +329,7 @@ export function WordCloudForm() {
                   name="scale"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Escala:</FormLabel>
+                      <FormLabel>Escala</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -318,11 +338,54 @@ export function WordCloudForm() {
                           disabled={isLoading}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Escala mínima: 0.1, máxima: 5
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
+                <FormItem>
+                  <FormLabel>Cores</FormLabel>
+                  <FormControl>
+                    <div className="space-y-2">
+                      {fields.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center space-x-2"
+                        >
+                          <Input
+                            type="color"
+                            {...form.register(`colors.${index}` as const)}
+                            // @ts-expect-error - TS doesn't like the fact that we're using a string as a key
+                            defaultValue={item}
+                            disabled={isLoading}
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => remove(index)}
+                            disabled={isLoading}
+                          >
+                            X
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        onClick={() => append("#000000")}
+                        disabled={isLoading}
+                      >
+                        Adicionar Cor
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    Adicione as cores desejadas para a nuvem de palavras. Se
+                    ficar vazio, será usado as cores padrão (Azul, Vermelho,
+                    Verde e Amarelo).
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
                 <Button
                   className="w-full"
                   type="submit"
