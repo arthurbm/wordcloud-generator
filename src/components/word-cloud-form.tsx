@@ -5,9 +5,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { Textarea } from "~/components/ui/textarea";
-import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
 import { getWords } from "~/app/actions";
 import { readStreamableValue } from "ai/rsc";
 import { toast } from "sonner";
@@ -15,6 +12,18 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { type ModelName } from "~/types";
 import { unstable_noStore as noStore } from "next/cache";
+import {
+  Form,
+  FormControl,
+  // FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "~/components/ui/form";
+import { Textarea } from "~/components/ui/textarea";
+import { Input } from "~/components/ui/input";
+import { Button } from "~/components/ui/button";
 
 const schema = z.object({
   text: z.string().min(1, "Texto é obrigatório"),
@@ -23,18 +32,16 @@ const schema = z.object({
   width: z
     .number()
     .min(100, "Largura mínima é 100")
-    .max(2000, "Largura máxima é 2000")
-    .default(600),
+    .max(2000, "Largura máxima é 2000"),
+  wordLimit: z
+    .number()
+    .min(1, "Limite mínimo é 1")
+    .max(100, "Limite máximo é 100"),
   height: z
     .number()
     .min(100, "Altura mínima é 100")
-    .max(2000, "Altura máxima é 2000")
-    .default(600),
-  scale: z
-    .number()
-    .min(0.1, "Escala mínima é 0.1")
-    .max(5, "Escala máxima é 5")
-    .default(2),
+    .max(2000, "Altura máxima é 2000"),
+  scale: z.number().min(0.1, "Escala mínima é 0.1").max(5, "Escala máxima é 5"),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -92,18 +99,13 @@ export function WordCloudForm() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedModel, setSelectedModel] = useState<ModelName>("gpt-4o");
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-    getValues,
-  } = useForm<FormData>({
+  const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       width: 2000,
       height: 1050,
       scale: 1,
+      wordLimit: 35,
     },
   });
 
@@ -119,14 +121,14 @@ export function WordCloudForm() {
   };
 
   const handleExtractKeywords = async () => {
-    const text = getValues("text");
-    const blacklistWords = getValues("blacklistWords");
+    const text = form.getValues("text");
+    const blacklistWords = form.getValues("blacklistWords");
     setIsLoading(true);
     try {
       noStore();
       const keywords = await getWords(text, selectedModel, blacklistWords);
       for await (const content of readStreamableValue(keywords)) {
-        setValue("text", content!);
+        form.setValue("text", content!);
       }
     } catch (error) {
       console.error("Erro ao extrair palavras-chave: ", error);
@@ -175,171 +177,189 @@ export function WordCloudForm() {
             Gerador de Nuvem de Palavras
           </h1>
         </div>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-6">
-              <div>
-                <label
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  htmlFor="text"
-                >
-                  Digite seu texto separado por vírgulas ou palavras seguidas de
-                  quantidade (ex: word, 5). Se quiser extrair palavras-chave, de
-                  um texto bruto, clique no botão abaixo.
-                </label>
-                <Textarea
-                  {...register("text")}
-                  id="text"
-                  placeholder="Digite ou cole seu texto aqui..."
-                  rows={6}
-                  disabled={isLoading}
-                />
-                {errors.text && (
-                  <p className="text-red-500">{errors.text.message}</p>
-                )}
-              </div>
-              <div>
-                <label
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  htmlFor="text"
-                >
-                  Palavras a serem excluídas do resultado: (opcional)
-                </label>
-                <Textarea
-                  {...register("blacklistWords")}
-                  id="text"
-                  placeholder="Digite ou cole seu texto aqui..."
-                  rows={6}
-                  disabled={isLoading}
-                />
-                {errors.text && (
-                  <p className="text-red-500">{errors.text.message}</p>
-                )}
-              </div>
-              <div>
-                <label
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  htmlFor="model"
-                >
-                  Selecione o Modelo:
-                </label>
-                <RadioGroup
-                  defaultValue={selectedModel}
-                  onValueChange={(value: ModelName) => setSelectedModel(value)}
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value="models/gemini-1.5-pro-latest"
-                      id="model3"
-                    />
-                    <Label htmlFor="model3">Gemini 1.5 Pro</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="gpt-4o" id="model1" />
-                    <Label htmlFor="model1">GPT 4o</Label>
-                  </div>
-                </RadioGroup>
-                {errors.model && (
-                  <p className="text-red-500">{errors.model.message}</p>
-                )}
-              </div>
-              <Button
-                type="button"
-                onClick={handleExtractKeywords}
-                disabled={isLoading}
-              >
-                {isLoading ? "Extraindo..." : "Extrair Palavras-Chave com IA"}
-              </Button>
-            </div>
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    htmlFor="width"
-                  >
-                    Largura:
-                  </label>
-                  <Input
-                    {...register("width", { valueAsNumber: true })}
-                    id="width"
-                    type="number"
-                    disabled={isLoading}
-                  />
-                  {errors.width && (
-                    <p className="text-red-500">{errors.width.message}</p>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="text"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Digite seu texto separado por vírgulas ou palavras
+                        seguidas de quantidade (ex: word, 5). Se quiser extrair
+                        palavras-chave, de um texto bruto, clique no botão
+                        abaixo.
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Digite ou cole seu texto aqui..."
+                          rows={6}
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
-                <div>
-                  <label
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    htmlFor="height"
-                  >
-                    Altura:
-                  </label>
-                  <Input
-                    {...register("height", { valueAsNumber: true })}
-                    id="height"
-                    type="number"
-                    disabled={isLoading}
-                  />
-                  {errors.height && (
-                    <p className="text-red-500">{errors.height.message}</p>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  htmlFor="scale"
-                >
-                  Escala:
-                </label>
-                <Input
-                  {...register("scale", { valueAsNumber: true })}
-                  id="scale"
-                  type="number"
-                  step={0.1}
-                  disabled={isLoading}
                 />
-                {errors.scale && (
-                  <p className="text-red-500">{errors.scale.message}</p>
+                <FormField
+                  control={form.control}
+                  name="wordLimit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantidade de Palavras:</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" disabled={isLoading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="blacklistWords"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Palavras a serem excluídas do resultado: (opcional)
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Digite ou cole seu texto aqui..."
+                          rows={6}
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormItem>
+                  <FormLabel>Selecione o Modelo:</FormLabel>
+                  <RadioGroup
+                    defaultValue={selectedModel}
+                    onValueChange={(value: ModelName) =>
+                      setSelectedModel(value)
+                    }
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value="models/gemini-1.5-pro-latest"
+                        id="model3"
+                      />
+                      <Label htmlFor="model3">Gemini 1.5 Pro</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="gpt-4o" id="model1" />
+                      <Label htmlFor="model1">GPT 4o</Label>
+                    </div>
+                  </RadioGroup>
+                  <FormMessage />
+                </FormItem>
+                <Button
+                  type="button"
+                  onClick={handleExtractKeywords}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Extraindo..." : "Extrair Palavras-Chave com IA"}
+                </Button>
+              </div>
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="width"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Largura:</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="number"
+                            disabled={isLoading}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="height"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Altura:</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="number"
+                            disabled={isLoading}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="scale"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Escala:</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          step={0.1}
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button
+                  className="w-full"
+                  type="submit"
+                  disabled={isLoading || mutation.isPending}
+                >
+                  {mutation.isPending
+                    ? "Gerando..."
+                    : "Gerar Nuvem de Palavras"}
+                </Button>
+                {imageSrc && (
+                  <div className="mt-6">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      Word Cloud
+                    </h2>
+                    <img src={imageSrc} alt="Generated Word Cloud" />
+                    <div className="mt-4 flex space-x-4">
+                      <Button
+                        variant={"secondary"}
+                        onClick={handleCopyImage}
+                        disabled={isLoading}
+                      >
+                        Copiar Imagem
+                      </Button>
+                      <Button
+                        variant={"secondary"}
+                        onClick={handleDownloadImage}
+                        disabled={isLoading}
+                      >
+                        Baixar Imagem
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
-              <Button
-                className="w-full"
-                type="submit"
-                disabled={isLoading || mutation.isPending}
-              >
-                {mutation.isPending ? "Gerando..." : "Gerar Nuvem de Palavras"}
-              </Button>
-              {imageSrc && (
-                <div className="mt-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    Word Cloud
-                  </h2>
-                  <img src={imageSrc} alt="Generated Word Cloud" />
-                  <div className="mt-4 flex space-x-4">
-                    <Button
-                      variant={"secondary"}
-                      onClick={handleCopyImage}
-                      disabled={isLoading}
-                    >
-                      Copiar Imagem
-                    </Button>
-                    <Button
-                      variant={"secondary"}
-                      onClick={handleDownloadImage}
-                      disabled={isLoading}
-                    >
-                      Baixar Imagem
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
-          </div>
-        </form>
+          </form>
+        </Form>
         {mutation.isError && (
           <p className="mt-4 text-red-500">
             Erro ao gerar a nuvem de palavras: {mutation.error.message}
