@@ -24,6 +24,8 @@ export async function getWords(
         return openai("gpt-4o");
       case "models/gemini-1.5-pro-latest":
         return google("models/gemini-1.5-pro-latest");
+      case "gpt-4o-mini":
+        return openai("gpt-4o-mini");
     }
   };
 

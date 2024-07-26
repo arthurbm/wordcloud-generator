@@ -262,13 +262,19 @@ export function WordCloudForm() {
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem
                         value="models/gemini-1.5-pro-latest"
-                        id="model3"
+                        id="gemini-1.5-pro-latest"
                       />
-                      <Label htmlFor="model3">Gemini 1.5 Pro</Label>
+                      <Label htmlFor="gemini-1.5-pro-latest">
+                        Gemini 1.5 Pro
+                      </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="gpt-4o" id="model1" />
-                      <Label htmlFor="model1">GPT 4o</Label>
+                      <Label htmlFor="gpt-4o">GPT 4o</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="gpt-4o-mini" id="model2" />
+                      <Label htmlFor="gpt-4o-mini">GPT 4o Mini</Label>
                     </div>
                   </RadioGroup>
                   <FormMessage />
